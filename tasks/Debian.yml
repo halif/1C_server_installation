@@ -1,0 +1,25 @@
+- name: Create install dir
+  file:
+    path: "{{ onec_install_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy deb packages
+  copy:
+    src: "deb/{{ item }}"
+    dest: "{{ onec_install_dir }}/{{ item }}"
+  loop: "{{ onec_packages }}"
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install dependencies
+  apt:
+    name: "{{ onec_dependencies_common + onec_dependencies_os }}"
+    state: present
+
+- name: Install 1C packages
+  apt:
+    deb: "{{ onec_install_dir }}/{{ item }}"
+  loop: "{{ onec_packages }}"

@@ -1,0 +1,8 @@
+- name: Load OS specific vars
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Run OS specific install
+  include_tasks: "{{ ansible_os_family }}.yml"
+
+- name: Configure systemd
+  include_tasks: systemd.yml
