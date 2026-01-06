@@ -1,0 +1,17 @@
+- name: Create systemd service link
+  file:
+    src: "{{ onec_service_source }}"
+    dest: "{{ onec_service_link }}"
+    state: link
+    force: yes
+  notify: Reload systemd
+
+- name: Enable 1C service
+  systemd:
+    name: "{{ onec_service_instance }}"
+    enabled: yes
+
+- name: Start 1C service
+  systemd:
+    name: "{{ onec_service_instance }}"
+    state: started
