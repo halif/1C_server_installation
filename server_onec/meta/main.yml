@@ -1,0 +1,17 @@
+galaxy_info:
+  role_name: onec_server
+  author: halif
+  description: Universal role to install 1C:Enterprise server
+  company: ""
+  license: MIT
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions: [focal, jammy]
+    - name: Debian
+      versions: [bullseye, bookworm]
+    - name: EL
+      versions: [7, 8, 9]
+
+dependencies: []

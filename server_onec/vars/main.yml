@@ -1,0 +1,12 @@
+onec_packages:
+  - "1c-enterprise-{{ onec_version }}-common_{{ onec_version | replace('.', '-') }}_amd64.deb"
+  - "1c-enterprise-{{ onec_version }}-crs_{{ onec_version | replace('.', '-') }}_amd64.deb"
+  - "1c-enterprise-{{ onec_version }}-server_{{ onec_version | replace('.', '-') }}_amd64.deb"
+  - "1c-enterprise-{{ onec_version }}-ws_{{ onec_version | replace('.', '-') }}_amd64.deb"
+
+onec_dependencies_os:
+  - unixodbc
+  - t1utils
+
+onec_service_source: "/opt/1cv8/{{ onec_arch }}/{{ onec_version }}/srv1cv8-{{ onec_version }}@.service"
+onec_service_link: "/etc/systemd/system/srv1cv8@.service"

@@ -1,0 +1,9 @@
+namespace: halif
+name: onec_server
+version: 1.0.0
+readme: README.md
+authors:
+  - Your Name <zigzagildar@gmail.com>
+description: Install and configure 1C:Enterprise server on Linux
+license: MIT
+tags:
