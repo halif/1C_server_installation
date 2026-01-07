@@ -1,3 +1,15 @@
+- name: Fail if OS is not supported
+  assert:
+    that:
+      - ansible_os_family in onec_supported_os_families
+    fail_msg: >
+      Operating system {{ ansible_distribution }}
+      (family: {{ ansible_os_family }})
+      is not supported by role onec_server.
+      Supported OS families: {{ onec_supported_os_families | join(', ') }}
+    success_msg: >
+      OS {{ ansible_distribution }} ({{ ansible_os_family }}) is supported.
+
 - name: Load OS specific vars
   include_vars: "{{ ansible_os_family }}.yml"
 
