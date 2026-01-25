@@ -59,7 +59,7 @@
 ## 5. Переменные роли
 
 ```yaml
-onec_version: "8.3.23.1688"
+onec_version: "8.3.ХХ.ХХХХ" (версия которая у вас имеется)
 onec_arch: x86_64
 onec_service_instance: srv1cv8@default
 onec_install_dir: /tmp/1c-install
