@@ -1,0 +1,30 @@
+# ALT Linux использует пакетный менеджер apt-rpm, а не yum/dnf.
+# Модуль community.general.apt_rpm требует коллекцию community.general
+# (см. README, раздел "Требования").
+
+- name: Create install dir
+  file:
+    path: "{{ onec_install_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy rpm packages
+  copy:
+    src: "rpm/{{ item }}"
+    dest: "{{ onec_install_dir }}/{{ item }}"
+  loop: "{{ onec_packages }}"
+
+- name: Update apt-rpm cache
+  community.general.apt_rpm:
+    update_cache: yes
+
+- name: Install dependencies
+  community.general.apt_rpm:
+    name: "{{ onec_dependencies_common + onec_dependencies_os }}"
+    state: present
+
+- name: Install 1C packages
+  community.general.apt_rpm:
+    name: "{{ onec_install_dir }}/{{ item }}"
+    state: present
+  loop: "{{ onec_packages }}"

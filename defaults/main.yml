@@ -1,6 +1,12 @@
 onec_version: "" # Тут указывается версия 1С Предприятия, обычно версия написана еще в названии файла
 onec_arch: x86_64
 
+# Семейства ОС, поддерживаемые ролью (используется в assert-проверке в tasks/main.yml)
+onec_supported_os_families:
+  - Debian
+  - RedHat
+  - Altlinux
+
 onec_service_instance: srv1cv8@default
 
 onec_install_dir: /tmp/1c-install

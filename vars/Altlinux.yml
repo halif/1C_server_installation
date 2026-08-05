@@ -1,0 +1,16 @@
+onec_packages:
+  - "1c-enterprise-{{ onec_version }}-common-{{ onec_version }}.{{ onec_arch }}.rpm"
+  - "1c-enterprise-{{ onec_version }}-crs-{{ onec_version }}.{{ onec_arch }}.rpm"
+  - "1c-enterprise-{{ onec_version }}-server-{{ onec_version }}.{{ onec_arch }}.rpm"
+  - "1c-enterprise-{{ onec_version }}-ws-{{ onec_version }}.{{ onec_arch }}.rpm"
+
+# ВАЖНО: имена пакетов для ALT Linux зависят от дистрибутива 1С —
+# сверься с фактическими именами файлов, которые ты положишь в files/rpm/,
+# и при необходимости поправь этот список.
+
+onec_dependencies_os:
+  - libodbc
+  - libgsf
+
+onec_service_source: "/opt/1cv8/{{ onec_arch }}/{{ onec_version }}/srv1cv8-{{ onec_version }}@.service"
+onec_service_link: "/etc/systemd/system/srv1cv8@.service"

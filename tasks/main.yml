@@ -10,6 +10,14 @@
     success_msg: >
       OS {{ ansible_distribution }} ({{ ansible_os_family }}) is supported.
 
+- name: Fail if onec_version is not set
+  assert:
+    that:
+      - onec_version | length > 0
+    fail_msg: >
+      onec_version must be set (e.g. '8.3.24.1234') —
+      it is used to build the 1C package file names.
+
 - name: Load OS specific vars
   include_vars: "{{ ansible_os_family }}.yml"
 

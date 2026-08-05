@@ -1,0 +1,202 @@
+diff --git a/README.md b/README.md
+index ed27546..7a2e4e5 100644
+--- a/README.md
++++ b/README.md
+@@ -27,13 +27,17 @@
+ | Семейство ОС | Дистрибутивы |
+ |-------------|--------------|
+ | Debian | Debian, Ubuntu |
+-| Debian-based | Astra Linux (CE / SE) |
++| Debian-based | Astra Linux (CE / SE)* |
+ | RedHat | RHEL, CentOS |
+ | RedHat-based | AlmaLinux, Rocky Linux |
+-| Altlinux | ALT Linux |
++| Altlinux | ALT Linux (пакеты ставятся через `apt-rpm`) |
++
++\* Astra Linux определяется Ansible как `ansible_os_family: Debian`,
++поэтому пойдёт по общей Debian-ветке роли; отдельно не тестировалось.
+ 
+ > При запуске на неподдерживаемой ОС роль завершает выполнение
+-> с диагностическим сообщением.
++> с диагностическим сообщением (список поддерживаемых семейств
++> задаётся переменной `onec_supported_os_families`).
+ 
+ ---
+ 
+@@ -44,6 +48,8 @@
+ - Наличие `systemd`
+ - SSH-доступ с правами `sudo`
+ - Установочные пакеты 1С (DEB или RPM)
++- Для ALT Linux: коллекция `community.general` (модуль `apt_rpm`) —
++  установи через `ansible-galaxy collection install community.general`
+ 
+ ---
+ 
+@@ -51,20 +57,54 @@
+ 
+ ### 4.1 Debian / Ubuntu / Astra Linux
+ 
+-Перед запуском на выполнение роли, в паке files должны уже находится необходимые пакеты deb/rpm, полученные
+-у 1С либо лицензионного дистрибьютера.
++Перед запуском роли положите пакеты **в подпапку `files/deb/`**:
++
++```
++files/deb/1c-enterprise-8.3.24.1234-common_8-3-24-1234_amd64.deb
++files/deb/1c-enterprise-8.3.24.1234-crs_8-3-24-1234_amd64.deb
++files/deb/1c-enterprise-8.3.24.1234-server_8-3-24-1234_amd64.deb
++files/deb/1c-enterprise-8.3.24.1234-ws_8-3-24-1234_amd64.deb
++```
++
++### 4.2 RHEL / CentOS / AlmaLinux / Rocky Linux
++
++Аналогично — пакеты **в подпапку `files/rpm/`**:
++
++```
++files/rpm/1c-enterprise-8.3.24.1234-common-8.3.24.1234.x86_64.rpm
++files/rpm/1c-enterprise-8.3.24.1234-crs-8.3.24.1234.x86_64.rpm
++files/rpm/1c-enterprise-8.3.24.1234-server-8.3.24.1234.x86_64.rpm
++files/rpm/1c-enterprise-8.3.24.1234-ws-8.3.24.1234.x86_64.rpm
++```
++
++Точные имена файлов зависят от `onec_version` и `onec_arch` — они
++должны совпадать с именами, которые формируют `vars/Debian.yml` /
++`vars/RedHat.yml`. Несовпадение имени приведёт к ошибке на шаге
++копирования пакетов.
++
++### 4.3 ALT Linux
++
++Тоже используется подпапка `files/rpm/`, но точные имена пакетов
++для ALT могут отличаться от RHEL-сборок — сверься с реальными
++именами файлов из дистрибутива 1С для ALT и при необходимости
++поправь список в `vars/Altlinux.yml`.
+ 
+ ---
+ 
+ ## 5. Переменные роли
+ 
+ ```yaml
+-onec_version: "8.3.ХХ.ХХХХ" (версия которая у вас имеется)
++onec_version: "8.3.ХХ.ХХХХ"  # ОБЯЗАТЕЛЬНАЯ переменная, версия которая у вас имеется
+ onec_arch: x86_64
+ onec_service_instance: srv1cv8@default
+ onec_install_dir: /tmp/1c-install
++onec_supported_os_families:   # можно переопределить список поддерживаемых семейств
++  - Debian
++  - RedHat
+ ```
+ 
++Роль явно падает на старте (assert), если `onec_version` не задан.
++
+ ## 6. Установка и запуск через Ansible Galaxy
+ 
+ ### 6.1 Установка роли
+@@ -72,7 +112,14 @@ onec_install_dir: /tmp/1c-install
+ Роль может быть установлена из Ansible Galaxy с управляющей машины:
+ 
+ ```bash
+-ansible-galaxy role install 1C_server_installation
++ansible-galaxy role install halif.onec_server
++```
++
++Либо через `requirements.yml`:
++
++```yaml
++roles:
++  - name: halif.onec_server
+ ```
+ 
+ 
+diff --git a/defaults/main.yml b/defaults/main.yml
+index dfbf7cb..663a46c 100644
+--- a/defaults/main.yml
++++ b/defaults/main.yml
+@@ -1,6 +1,12 @@
+ onec_version: "" # Тут указывается версия 1С Предприятия, обычно версия написана еще в названии файла
+ onec_arch: x86_64
+ 
++# Семейства ОС, поддерживаемые ролью (используется в assert-проверке в tasks/main.yml)
++onec_supported_os_families:
++  - Debian
++  - RedHat
++  - Altlinux
++
+ onec_service_instance: srv1cv8@default
+ 
+ onec_install_dir: /tmp/1c-install
+diff --git a/tasks/Altlinux.yml b/tasks/Altlinux.yml
+new file mode 100644
+index 0000000..c14e8e2
+--- /dev/null
++++ b/tasks/Altlinux.yml
+@@ -0,0 +1,30 @@
++# ALT Linux использует пакетный менеджер apt-rpm, а не yum/dnf.
++# Модуль community.general.apt_rpm требует коллекцию community.general
++# (см. README, раздел "Требования").
++
++- name: Create install dir
++  file:
++    path: "{{ onec_install_dir }}"
++    state: directory
++    mode: '0755'
++
++- name: Copy rpm packages
++  copy:
++    src: "rpm/{{ item }}"
++    dest: "{{ onec_install_dir }}/{{ item }}"
++  loop: "{{ onec_packages }}"
++
++- name: Update apt-rpm cache
++  community.general.apt_rpm:
++    update_cache: yes
++
++- name: Install dependencies
++  community.general.apt_rpm:
++    name: "{{ onec_dependencies_common + onec_dependencies_os }}"
++    state: present
++
++- name: Install 1C packages
++  community.general.apt_rpm:
++    name: "{{ onec_install_dir }}/{{ item }}"
++    state: present
++  loop: "{{ onec_packages }}"
+diff --git a/tasks/main.yml b/tasks/main.yml
+index bf8dba5..f621bc8 100644
+--- a/tasks/main.yml
++++ b/tasks/main.yml
+@@ -10,6 +10,14 @@
+     success_msg: >
+       OS {{ ansible_distribution }} ({{ ansible_os_family }}) is supported.
+ 
++- name: Fail if onec_version is not set
++  assert:
++    that:
++      - onec_version | length > 0
++    fail_msg: >
++      onec_version must be set (e.g. '8.3.24.1234') —
++      it is used to build the 1C package file names.
++
+ - name: Load OS specific vars
+   include_vars: "{{ ansible_os_family }}.yml"
+ 
+diff --git a/vars/Altlinux.yml b/vars/Altlinux.yml
+new file mode 100644
+index 0000000..3362123
+--- /dev/null
++++ b/vars/Altlinux.yml
+@@ -0,0 +1,16 @@
++onec_packages:
++  - "1c-enterprise-{{ onec_version }}-common-{{ onec_version }}.{{ onec_arch }}.rpm"
++  - "1c-enterprise-{{ onec_version }}-crs-{{ onec_version }}.{{ onec_arch }}.rpm"
++  - "1c-enterprise-{{ onec_version }}-server-{{ onec_version }}.{{ onec_arch }}.rpm"
++  - "1c-enterprise-{{ onec_version }}-ws-{{ onec_version }}.{{ onec_arch }}.rpm"
++
++# ВАЖНО: имена пакетов для ALT Linux зависят от дистрибутива 1С —
++# сверься с фактическими именами файлов, которые ты положишь в files/rpm/,
++# и при необходимости поправь этот список.
++
++onec_dependencies_os:
++  - libodbc
++  - libgsf
++
++onec_service_source: "/opt/1cv8/{{ onec_arch }}/{{ onec_version }}/srv1cv8-{{ onec_version }}@.service"
++onec_service_link: "/etc/systemd/system/srv1cv8@.service"
